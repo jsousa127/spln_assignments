@@ -6,16 +6,16 @@ from sqlalchemy import create_engine, Column, Table, Integer, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
-def lookup(word):
+def lookup(word,pal):
     global array
     if not word:
         return 0
-    w = Palavras(pal=word)
-    for e in session.query(Elemento):
+    a = session.query(Elemento)
+    for e in a:
         el = e.elem.lower()
         if re.match(el, word) :
-            if (len(word) == len(el)) | (lookup(word[len(el):]) == 1):
-                w.elementos.append(e)
+            if (len(word) == len(el)) | (lookup(word[len(el):],pal) == 1):
+                pal.elementos.append(e)
                 return 1
 
     return 0
@@ -52,9 +52,9 @@ Session = sessionmaker(bind=engine)
 
 session = Session()
 
-elements = open("elements.txt","r")
-for line in elements:
-    session.add(Elemento(elem=line))
+elements = open("elements.txt","r").read().split()
+for e in elements:
+    session.add(Elemento(elem=e))
 
 
 f = open(argv[1],"r")
@@ -72,10 +72,12 @@ except:
 for w in words:
     word = strip_accents(w)
     word = re.sub('[^a-zA-Z]+', '', w).lower()
-    if lookup(word):
+    pal = Palavras(pal=word)
+    if lookup(word,pal):
         for e in array:
             elems += e + " "
-        html.addHtml("● %s ☛ %s"%(w.capitalize(),elems),out)
+        session.add(pal)    
+        print(pal)
     del array[:]
     elems = ""
 
