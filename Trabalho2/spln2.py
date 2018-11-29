@@ -20,47 +20,40 @@ def lookup(word,pal):
 
     return 0
 
-
 def strip_accents(word):
    return ''.join(c for c in unicodedata.normalize('NFD', word)
                   if unicodedata.category(c) != 'Mn')
 
+def populate_elements():
+    elements = open("elements.txt","r").read().split()
+    for e in elements:
+        session.add(Elemento(elem=e))
+
 Base= declarative_base()
+
+class Palavras(Base):
+    __tablename__ = 'palavras'
+    id = Column(Integer, primary_key=True)
+    pal = Column(String)
+    elementos = relationship("Elemento",secondary=palavras_elementos)
+
+class Elemento(Base):
+    __tablename__ = 'elemento'
+    id = Column(Integer, primary_key=True)
+    elem= Column(String)
 
 palavras_elementos= Table('palavras_elementos', Base.metadata,
     Column('palavras', Integer, ForeignKey('palavras.id')),
     Column('elemento', Integer, ForeignKey('elemento.id'))
 )
 
-class Palavras(Base):
-    __tablename__ = 'palavras'
-    id = Column(Integer, primary_key=True)
-    pal = Column(String)
-    elementos = relationship("Elemento",secondary=palavras_elementos,back_populates="palavras")
-
-class Elemento(Base):
-    __tablename__ = 'elemento'
-    id = Column(Integer, primary_key=True)
-    elem= Column(String)
-    palavras = relationship("Palavras",secondary=palavras_elementos,back_populates="elementos")
-
-
 engine= create_engine('sqlite:///spln.db', echo=True)
-
 Base.metadata.create_all(bind=engine)
 Session = sessionmaker(bind=engine)
-
 session = Session()
-
-elements = open("elements.txt","r").read().split()
-for e in elements:
-    session.add(Elemento(elem=e))
-
+populate_elements()
 
 f = open(argv[1],"r")
-
-array = []
-elems = ""
 try:
     words = f.read().split()
 except:
@@ -69,18 +62,12 @@ except:
         words = codecs.open(argv[1],"r","iso-8859-1").read().split()
     except:
         print("Não foi possivel abrir o ficheiro")
+
 for w in words:
-    word = strip_accents(w)
-    word = re.sub('[^a-zA-Z]+', '', w).lower()
+    word = w.lower()
     pal = Palavras(pal=word)
     if lookup(word,pal):
-        for e in array:
-            elems += e + " "
-        session.add(pal)    
-        print(pal)
-    del array[:]
-    elems = ""
+        session.add(pal)
 
 session.commit()
-
 session.close()

@@ -4,7 +4,7 @@ import html
 from sys import argv
 
 
-def lookup(word):
+def lookup(word,pal):
     global array
     if not word:
         return 0
@@ -12,7 +12,7 @@ def lookup(word):
     for e in elements:
         el = e.lower()
         if re.match(el, word) :
-            if (len(word) == len(el)) | (lookup(word[len(el):]) == 1):
+            if (len(word) == len(el)) | (lookup(word[len(el):],pal) == 1):
                 array.insert(0,e)
                 return 1
 
@@ -38,9 +38,9 @@ except:
         print("Não foi possivel abrir o ficheiro")
 out = html.initHtml("Words written as a sequence of chemical symbols")
 for w in words:
-    word = strip_accents(w)
-    word = re.sub('[^a-zA-Z]+', '', w).lower()
-    if lookup(word):
+    word = w.lower()
+    #word = re.sub('[^a-zA-Z]+', '', w).lower()
+    if lookup(word,word):
         for e in array:
             elems += e + " "
         html.addHtml("● %s ☛ %s"%(w.capitalize(),elems),out)
