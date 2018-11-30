@@ -1,7 +1,7 @@
 import re
 import unicodedata
 import html
-from sys import argv
+from sys import argv, argc
 from sqlalchemy import create_engine, Column, Table, Integer, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
@@ -10,8 +10,8 @@ def lookup(word,pal):
     global array
     if not word:
         return 0
-    a = session.query(Elemento)
-    for e in a:
+        
+    for e in session.query(Elemento):
         el = e.elem.lower()
         if re.match(el, word) :
             if (len(word) == len(el)) | (lookup(word[len(el):],pal) == 1):
@@ -29,18 +29,20 @@ def populate_elements():
     for e in elements:
         session.add(Elemento(elem=e))
 
+
 Base= declarative_base()
 
 class Palavras(Base):
     __tablename__ = 'palavras'
     id = Column(Integer, primary_key=True)
     pal = Column(String)
-    elementos = relationship("Elemento",secondary=palavras_elementos)
+    elementos = relationship("Elemento",secondary=palavras_elementos,back_populates="palavras")
 
 class Elemento(Base):
     __tablename__ = 'elemento'
     id = Column(Integer, primary_key=True)
     elem= Column(String)
+    palavras = relationship("Palavras",secondary=palavras_elementos,back_populates="elementos")
 
 palavras_elementos= Table('palavras_elementos', Base.metadata,
     Column('palavras', Integer, ForeignKey('palavras.id')),
@@ -51,23 +53,32 @@ engine= create_engine('sqlite:///spln.db', echo=True)
 Base.metadata.create_all(bind=engine)
 Session = sessionmaker(bind=engine)
 session = Session()
-populate_elements()
-
-f = open(argv[1],"r")
-try:
-    words = f.read().split()
-except:
+#populate_elements()
+if argc > 1 :
+    f = open(argv[1],"r")
     try:
-        import codecs
-        words = codecs.open(argv[1],"r","iso-8859-1").read().split()
+        words = f.read().split()
     except:
-        print("Não foi possivel abrir o ficheiro")
+        try:
+            import codecs
+            words = codecs.open(argv[1],"r","iso-8859-1").read().split()
+        except:
+            print("Não foi possivel abrir o ficheiro")
 
-for w in words:
-    word = w.lower()
-    pal = Palavras(pal=word)
-    if lookup(word,pal):
-        session.add(pal)
+    for w in words:
+        word = w.lower()
+        pal = Palavras(pal=word)
+        if lookup(word,pal):
+            session.add(pal)
+
+
+query1 = session.query(Elemento).filter(Elemento.elem.match('Ba')).palavras
+f1 = open("f1.txt","w+")
+for word in query1 :
+    f1.write(word)
+
+
+
 
 session.commit()
 session.close()
