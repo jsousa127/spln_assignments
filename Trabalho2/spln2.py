@@ -16,7 +16,6 @@ def lookup(word,pal):
         if re.match(el, word) :
             if (len(word) == len(el)) | (lookup(word[len(el):],pal) == 1):
                 pal.elementos.append(e)
-                e.palavras.append(pal)
                 return 1
 
     return 0
@@ -38,7 +37,7 @@ palavras_elementos= Table('palavras_elementos', Base.metadata,
     Column('elemento', Integer, ForeignKey('elemento.id'))
 )
 
-class Palavras(Base):
+class Palavra(Base):
     __tablename__ = 'palavras'
     id = Column(Integer, primary_key=True)
     pal = Column(String)
@@ -48,7 +47,7 @@ class Elemento(Base):
     __tablename__ = 'elemento'
     id = Column(Integer, primary_key=True)
     elem= Column(String)
-    palavras = relationship("Palavras",secondary=palavras_elementos,back_populates="elementos")
+    palavras = relationship("Palavra",secondary=palavras_elementos,back_populates="elementos")
 
 
 engine= create_engine('sqlite:///spln.db', echo=True)
@@ -68,7 +67,7 @@ except:
 
 for w in words:
     word = w.lower()
-    pal = Palavras(pal=word)
+    pal = Palavra(pal=word)
     if lookup(word,pal):
         session.add(pal)
 
@@ -78,6 +77,10 @@ f1 = open("f1.txt","w+")
 for word in query1 :
     f1.write(word.pal+'\n')
 
+query2 = session.query(Palavra).filter(Palavra.pal == 'falar').one().elementos
+f2 = open("f2.txt","w+")
+for elem in query2:
+    f2.write(elem.elem+'\n')
 
 
 
